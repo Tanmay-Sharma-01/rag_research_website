@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG System for TBI — Given Voice Program</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal-50: #E1F5EE;
+    --teal-100: #9FE1CB;
+    --teal-200: #5DCAA5;
+    --teal-600: #0F6E56;
+    --teal-800: #085041;
+    --teal-900: #04342C;
+    --navy: #0a1628;
+    --navy-mid: #112240;
+    --slate: #1e3a5f;
+    --paper: #f5f3ef;
+    --paper-dark: #ede9e2;
+    --ink: #1a1a2e;
+    --ink-muted: #4a5568;
+    --ink-light: #718096;
+    --accent: #1D9E75;
+    --accent-light: #5DCAA5;
+    --accent-glow: rgba(29,158,117,0.15);
+    --gold: #d4a017;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 3rem;
+    background: rgba(245,243,239,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(29,158,117,0.15);
+  }
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    background: var(--navy);
+    position: relative;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 0 5rem;
+    overflow: hidden;
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(29,158,117,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(29,158,117,0.06) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .hero-glow {
+    position: absolute; top: -10%; right: -10%;
+    width: 55vw; height: 55vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(29,158,117,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-glow-2 {
+    position: absolute; bottom: -20%; left: -5%;
+    width: 40vw; height: 40vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(17,34,64,0.8) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-content {
+    position: relative;
+    padding: 0 3rem;
+    max-width: 1200px;
+  }
+  .hero-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-light);
+    background: rgba(29,158,117,0.12);
+    border: 1px solid rgba(29,158,117,0.3);
+    padding: 0.4rem 1rem;
+    border-radius: 100px;
+    margin-bottom: 2rem;
+  }
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.8rem, 6vw, 5.5rem);
+    color: #f0ece4;
+    line-height: 1.05;
+    margin-bottom: 1.5rem;
+    max-width: 850px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent-light);
+  }
+  .hero-sub {
+    font-size: 1.05rem;
+    color: rgba(240,236,228,0.6);
+    max-width: 520px;
+    margin-bottom: 3rem;
+    font-weight: 300;
+    line-height: 1.8;
+  }
+  .hero-meta {
+    display: flex; gap: 3rem; flex-wrap: wrap;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 2rem;
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 0.25rem; }
+  .meta-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(240,236,228,0.4);
+  }
+  .meta-value {
+    font-size: 0.9rem;
+    color: rgba(240,236,228,0.85);
+    font-weight: 400;
+  }
+
+  /* ── SECTIONS ── */
+  .section {
+    padding: 6rem 3rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .section-label::before {
+    content: '';
+    display: inline-block;
+    width: 24px; height: 1px;
+    background: var(--accent);
+  }
+  .section-title {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    color: var(--ink);
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+  .section-title em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .section-intro {
+    font-size: 1.05rem;
+    color: var(--ink-muted);
+    max-width: 680px;
+    line-height: 1.85;
+    margin-bottom: 3.5rem;
+  }
+
+  /* ── OVERVIEW ── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: var(--paper-dark);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .overview-card {
+    background: #fff;
+    padding: 2.5rem;
+  }
+  .overview-card.accent-card {
+    background: var(--navy);
+  }
+  .overview-card.accent-card p { color: rgba(240,236,228,0.7); }
+  .overview-card.accent-card h3 { color: #f0ece4; }
+  .overview-card h3 {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    color: var(--ink);
+  }
+  .overview-card p {
+    font-size: 0.92rem;
+    line-height: 1.85;
+    color: var(--ink-muted);
+  }
+  .project-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 1.5rem 0 0;
+  }
+  .project-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.85rem 1rem;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid rgba(29,158,117,0.16);
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 500;
+    transition: transform 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .project-link:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent);
+    background: rgba(29,158,117,0.06);
+  }
+  .project-link svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+  }
+
+  /* ── RESEARCH QUESTIONS ── */
+  .rq-section { background: var(--navy); }
+  .rq-section .section-title { color: #f0ece4; }
+  .rq-section .section-label { color: var(--accent-light); }
+  .rq-section .section-label::before { background: var(--accent-light); }
+  .rq-list { display: flex; flex-direction: column; gap: 1rem; }
+  .rq-item {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: 1.5rem;
+    align-items: start;
+    padding: 2rem;
+    border: 1px solid rgba(29,158,117,0.2);
+    border-radius: 12px;
+    background: rgba(29,158,117,0.04);
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .rq-item:hover {
+    border-color: rgba(29,158,117,0.5);
+    background: rgba(29,158,117,0.09);
+  }
+  .rq-number {
+    font-family: var(--serif);
+    font-size: 2.5rem;
+    color: var(--accent);
+    line-height: 1;
+    padding-top: 0.1rem;
+  }
+  .rq-text {
+    font-size: 1.05rem;
+    color: rgba(240,236,228,0.8);
+    line-height: 1.75;
+    padding-top: 0.5rem;
+  }
+
+  /* ── ARCHITECTURE ── */
+  .arch-pipeline {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--paper-dark);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 3rem;
+  }
+  .arch-stage {
+    background: #fff;
+    padding: 2rem 1.5rem;
+    position: relative;
+    transition: background 0.25s;
+  }
+  .arch-stage:hover { background: var(--teal-50); }
+  .arch-stage-num {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+  .arch-stage h4 {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
+    color: var(--ink);
+  }
+  .arch-stage p {
+    font-size: 0.84rem;
+    color: var(--ink-muted);
+    line-height: 1.75;
+  }
+  .arch-stage-arrow {
+    position: absolute; top: 50%; right: -10px;
+    transform: translateY(-50%);
+    width: 20px; height: 20px;
+    background: var(--accent);
+    clip-path: polygon(0 25%, 60% 25%, 60% 0%, 100% 50%, 60% 100%, 60% 75%, 0 75%);
+    z-index: 5;
+  }
+  .arch-stage:last-child .arch-stage-arrow { display: none; }
+
+  .tech-chips {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  .chip {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    background: rgba(29,158,117,0.1);
+    color: var(--teal-600);
+    border: 1px solid rgba(29,158,117,0.2);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── FEATURE HIGHLIGHT ── */
+  .feature-section { background: var(--ink); }
+  .feature-section .section-title { color: #f0ece4; }
+  .feature-section .section-label { color: var(--accent-light); }
+  .feature-section .section-label::before { background: var(--accent-light); }
+  .feature-section .section-intro { color: rgba(240,236,228,0.6); }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  .feature-card {
+    padding: 2rem;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.03);
+    transition: border-color 0.3s;
+  }
+  .feature-card:hover { border-color: rgba(29,158,117,0.4); }
+  .feature-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: rgba(29,158,117,0.15);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.25rem;
+  }
+  .feature-icon svg { width: 22px; height: 22px; stroke: var(--accent-light); fill: none; stroke-width: 1.5; }
+  .feature-card h4 {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    color: #f0ece4;
+    margin-bottom: 0.75rem;
+  }
+  .feature-card p {
+    font-size: 0.87rem;
+    color: rgba(240,236,228,0.55);
+    line-height: 1.8;
+  }
+  .feature-card.full-span { grid-column: 1 / -1; }
+
+  /* ── EVALUATION ── */
+  .findings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  .finding-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 2rem;
+    border: 1px solid var(--paper-dark);
+    transition: transform 0.25s, box-shadow 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .finding-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+  }
+  .finding-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+  }
+  .finding-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .finding-card h4 {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    color: var(--ink);
+    margin-bottom: 0.75rem;
+  }
+  .finding-card p {
+    font-size: 0.87rem;
+    color: var(--ink-muted);
+    line-height: 1.8;
+  }
+
+  /* ── LITERATURE ── */
+  .lit-section { background: var(--paper-dark); }
+  .refs-list {
+    display: flex; flex-direction: column; gap: 0.75rem;
+  }
+  .ref-item {
+    display: flex; align-items: start; gap: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .ref-item:hover { border-color: var(--accent); }
+  .ref-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 0.45rem;
+    flex-shrink: 0;
+  }
+  .ref-item p {
+    font-size: 0.88rem;
+    color: var(--ink-muted);
+    line-height: 1.65;
+  }
+
+  /* ── FUTURE DIRECTIONS ── */
+  .future-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  .future-card {
+    padding: 2rem;
+    border-left: 3px solid var(--accent);
+    background: #fff;
+    border-radius: 0 12px 12px 0;
+    transition: background 0.2s;
+  }
+  .future-card:hover { background: var(--teal-50); }
+  .future-card h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+  }
+  .future-card p {
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+    line-height: 1.75;
+  }
+
+  /* ── REFLECTION ── */
+  .reflection-section { background: var(--navy); }
+  .reflection-section .section-title { color: #f0ece4; }
+  .reflection-section .section-label { color: var(--accent-light); }
+  .reflection-section .section-label::before { background: var(--accent-light); }
+  .pullquote {
+    font-family: var(--serif);
+    font-size: clamp(1.3rem, 2.5vw, 2rem);
+    font-style: italic;
+    color: rgba(240,236,228,0.85);
+    line-height: 1.5;
+    padding: 2.5rem;
+    border-left: 3px solid var(--accent);
+    margin-bottom: 3rem;
+    background: rgba(29,158,117,0.06);
+    border-radius: 0 12px 12px 0;
+  }
+  .reflection-body {
+    font-size: 1rem;
+    color: rgba(240,236,228,0.65);
+    line-height: 1.9;
+    max-width: 720px;
+  }
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 2.5rem;
+  }
+  .skill-chip {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    padding: 0.6rem 1rem;
+    border: 1px solid rgba(29,158,117,0.3);
+    border-radius: 8px;
+    color: var(--accent-light);
+    background: rgba(29,158,117,0.07);
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #060d1a;
+    padding: 3rem;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  .footer-brand {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: rgba(240,236,228,0.3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .footer-right {
+    font-size: 0.8rem;
+    color: rgba(240,236,228,0.3);
+  }
+
+  /* ── DIVIDERS ── */
+  .divider { height: 1px; background: var(--paper-dark); margin: 0; }
+  .divider-dark { height: 1px; background: rgba(255,255,255,0.06); margin: 0; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .hero-content > * {
+    animation: fadeUp 0.7s ease both;
+  }
+  .hero-tag    { animation-delay: 0.1s; }
+  .hero h1     { animation-delay: 0.25s; }
+  .hero-sub    { animation-delay: 0.4s; }
+  .hero-meta   { animation-delay: 0.55s; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 820px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .section { padding: 4rem 1.5rem; }
+    .hero-content { padding: 0 1.5rem; }
+    .overview-grid,
+    .arch-pipeline,
+    .feature-grid,
+    .findings-grid,
+    .future-grid,
+    .skills-grid { grid-template-columns: 1fr; }
+    .feature-card.full-span { grid-column: auto; }
+    .hero h1 { font-size: 2.4rem; }
+    footer { padding: 2rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Given Voice / Penn State</div>
+  <ul class="nav-links">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#evaluation">Evaluation</a></li>
+    <li><a href="#future">Future</a></li>
+    <li><a href="#reflection">Reflection</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-glow-2"></div>
+  <div class="hero-content">
+    <div class="hero-tag">Spring 2026 · Research Documentation</div>
+    <h1>RAG System for <em>TBI</em> Speech‑Language Pathology Support</h1>
+    <p class="hero-sub">A retrieval-augmented generation pipeline designed to bridge the gap between neurological research and the full ecosystem of TBI care — clinicians and caregivers alike.</p>
+    <div class="hero-meta">
+      <div class="meta-item">
+        <span class="meta-label">Researchers</span>
+        <span class="meta-value">Tanmay Sharma, Devaj Solanki</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Advisor</span>
+        <span class="meta-value">Prof. Jenn McCauley</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Program</span>
+        <span class="meta-value">The Given Voice Program</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Institution</span>
+        <span class="meta-value">Penn State IST</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- OVERVIEW -->
+<section id="overview">
+  <div class="section">
+    <div class="section-label">01 — Project Overview</div>
+    <h2 class="section-title">Two problems, <em>one</em> system</h2>
+    <p class="section-intro">TBI rehabilitation creates a knowledge crisis on two fronts: clinicians can't keep pace with research, and families are left without the information they urgently need.</p>
+    <div class="project-links">
+      <a href="https://github.com/Devaj6190/rag_research" class="project-link" aria-label="GitHub repository" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.483 0-.237-.009-.868-.014-1.703-2.782.604-3.369-1.34-3.369-1.34-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.607.069-.607 1.004.07 1.532 1.032 1.532 1.032.892 1.528 2.341 1.086 2.91.831.091-.647.35-1.086.636-1.335-2.22-.253-4.555-1.111-4.555-4.945 0-1.091.39-1.983 1.029-2.681-.103-.253-.446-1.272.098-2.65 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.748-1.025 2.748-1.025.546 1.379.203 2.398.1 2.65.64.698 1.028 1.59 1.028 2.681 0 3.843-2.338 4.688-4.566 4.935.36.31.68.92.68 1.852 0 1.336-.012 2.415-.012 2.744 0 .268.18.58.688.482A10.002 10.002 0 0022 12c0-5.523-4.477-10-10-10z"/></svg>
+        GitHub Repo
+      </a>
+      <a href="tbi_poster%20(1).pdf" download="tbi_poster.pdf" class="project-link" aria-label="Poster board">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4V4zm2 2v12h12V6H6zm3 3h6v2H9V9zm0 4h6v2H9v-2z"/></svg>
+        Poster Board
+      </a>
+    </div>
+    <br>
+    <div class="overview-grid">
+      <div class="overview-card">
+        <h3>The Clinical Gap</h3>
+        <p>Therapists must manually sift through a vast, ever-growing body of scientific literature, creating a significant lag between new discoveries and their clinical application. Traumatic brain injury rehabilitation is a complex, interdisciplinary process that demands constant access to the latest neurological research.</p>
+      </div>
+      <div class="overview-card accent-card">
+        <h3>The Caretaker Gap</h3>
+        <p>TBI recovery involves family members and caretakers who need to understand the patient's condition in plain, accessible language — a group frequently left without meaningful information, increasing caretaker stress and slowing recovery at home.</p>
+      </div>
+      <div class="overview-card" style="grid-column: 1 / -1;">
+        <h3>Our Contribution</h3>
+        <p>This system was developed to address both challenges simultaneously, serving as a novel contribution to AI-assisted rehabilitation that supports the full ecosystem of care around a TBI patient — not just the clinical team. Built under the Given Voice Program at Penn State's College of Information Sciences and Technology, the project demonstrates that meaningful personalization in clinical AI is achievable without model fine-tuning.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- RESEARCH QUESTIONS -->
+<section class="rq-section" id="questions">
+  <div class="section">
+    <div class="section-label">02 — Research Questions</div>
+    <h2 class="section-title" style="color:#f0ece4;">Three questions drove <em>everything</em></h2>
+    <div class="rq-list">
+      <div class="rq-item">
+        <div class="rq-number">1</div>
+        <div class="rq-text">Can a RAG system effectively surface relevant TBI research for both clinical and non-clinical users?</div>
+      </div>
+      <div class="rq-item">
+        <div class="rq-number">2</div>
+        <div class="rq-text">Does integrating patient-specific context via physician's notes improve the relevance and usefulness of AI-generated responses?</div>
+      </div>
+      <div class="rq-item">
+        <div class="rq-number">3</div>
+        <div class="rq-text">Can the system meaningfully close the knowledge gap between medical professionals and family caretakers of TBI patients?</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <div class="section">
+    <div class="section-label">03 — Technical Architecture</div>
+    <h2 class="section-title">A full RAG <em>pipeline</em> in four stages</h2>
+    <p class="section-intro">Built entirely in Python with a focus on system autonomy — no external API calls at the embedding stage means full privacy compliance and offline capability.</p>
+    <div class="arch-pipeline">
+      <div class="arch-stage">
+        <div class="arch-stage-num">STAGE 01</div>
+        <h4>Paper Ingestion</h4>
+        <p>Neurological literature collected from curated PDFs and PubMed Central via E-utilities API. A keyword co-occurrence scoring mechanism prioritizes clinically relevant papers. Chunked into 500-character segments with overlap.</p>
+        <div class="tech-chips">
+          <span class="chip">PubMed API</span>
+          <span class="chip">PMC efetch</span>
+        </div>
+        <div class="arch-stage-arrow"></div>
+      </div>
+      <div class="arch-stage">
+        <div class="arch-stage-num">STAGE 02</div>
+        <h4>Embedding & Indexing</h4>
+        <p>All document chunks embedded using sentence-transformers/all-MiniLM-L6-v2 — running fully locally and offline. Stored in ChromaDB for efficient semantic retrieval with zero external API dependency.</p>
+        <div class="tech-chips">
+          <span class="chip">HuggingFace</span>
+          <span class="chip">ChromaDB</span>
+        </div>
+        <div class="arch-stage-arrow"></div>
+      </div>
+      <div class="arch-stage">
+        <div class="arch-stage-num">STAGE 03</div>
+        <h4>Semantic Retrieval</h4>
+        <p>User queries trigger a semantic search over the ChromaDB index, retrieving the top-5 most contextually relevant document chunks. Retrieval-first grounding directly reduces hallucination risk common in purely generative models.</p>
+        <div class="tech-chips">
+          <span class="chip">Vector Search</span>
+          <span class="chip">Top-5 Chunks</span>
+        </div>
+        <div class="arch-stage-arrow"></div>
+      </div>
+      <div class="arch-stage">
+        <div class="arch-stage-num">STAGE 04</div>
+        <h4>Response Generation</h4>
+        <p>Retrieved chunks pass to DeepSeek LLM alongside the user's query. Each answer includes source attribution so users can trace which research papers informed the output. FastAPI backend + login-protected frontend.</p>
+        <div class="tech-chips">
+          <span class="chip">DeepSeek</span>
+          <span class="chip">FastAPI</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+      <div style="background:#fff; border-radius:14px; padding:2rem; border:1px solid var(--paper-dark);">
+        <div class="section-label" style="margin-bottom:0.75rem;">Literature Base</div>
+        <p style="font-size:2.8rem; font-family:var(--serif); color:var(--ink); line-height:1;">~300</p>
+        <p style="font-size:0.88rem; color:var(--ink-muted); margin-top:0.5rem;">research papers at poster presentation, with infrastructure to scale to 1000+ articles</p>
+      </div>
+      <div style="background:var(--navy); border-radius:14px; padding:2rem;">
+        <div class="section-label" style="color:var(--accent-light); margin-bottom:0.75rem;"><span style="background:var(--accent-light); display:inline-block; width:24px; height:1px; vertical-align:middle; margin-right:0.75rem;"></span>Key Design Principle</div>
+        <p style="font-size:0.92rem; color:rgba(240,236,228,0.7); line-height:1.8;">Embedding runs fully offline — no external API calls at the indexing stage. This was a deliberate decision for system autonomy and compliance with health data privacy requirements.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- KEY FEATURE -->
+<section class="feature-section" id="feature">
+  <div class="section">
+    <div class="section-label">04 — Key Feature</div>
+    <h2 class="section-title">Physician's Note <em>Personalization</em></h2>
+    <p class="section-intro">The system's defining feature emerged directly from caretaker feedback — a design that proves meaningful personalization is achievable entirely within a RAG framework, with no fine-tuning required.</p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <h4>Optional Note Upload</h4>
+        <p>Users can attach a physician's note or clinical summary alongside their query. This document is incorporated directly into the retrieval context, enabling responses tailored to a specific patient's situation.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </div>
+        <h4>Privacy by Design</h4>
+        <p>Users retain full control over what clinical information they choose to share. The design preserves privacy and maintains compliance with relevant health data policies — no data is stored post-session.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <h4>No Fine-Tuning Required</h4>
+        <p>Meaningful personalization is achieved entirely within the RAG framework. This demonstrated that expensive, compute-intensive model training is not a prerequisite for contextually relevant clinical AI responses.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <h4>User-Centered Origin</h4>
+        <p>This feature emerged directly from iterative end-user feedback during evaluation sessions, underscoring the value of a user-centered design methodology in clinical AI development.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EVALUATION -->
+<section id="evaluation">
+  <div class="section">
+    <div class="section-label">05 — Evaluation & Results</div>
+    <h2 class="section-title">Four key <em>findings</em></h2>
+    <p class="section-intro">The system was evaluated through a structured feedback session with a real patient's caretaker, who queried the system on topics directly relevant to their caregiving situation.</p>
+    <div class="findings-grid">
+      <div class="finding-card">
+        <div class="finding-label">Finding 01 — Usability</div>
+        <h4>Highly Accessible to Non-Professionals</h4>
+        <p>The caretaker found the system highly usable and effective for quickly accessing information about the patient's TBI condition. Non-professional users without clinical training were able to retrieve meaningful, readable content with minimal friction.</p>
+      </div>
+      <div class="finding-card">
+        <div class="finding-label">Finding 02 — Information Relevance</div>
+        <h4>General Guidance Had Limits</h4>
+        <p>While system responses were consistently accurate and grounded in indexed research, general TBI guidance was sometimes less actionable than desired given the nuances of the unique caregiving context. Personalization emerged as the primary improvement area.</p>
+      </div>
+      <div class="finding-card">
+        <div class="finding-label">Finding 03 — Personalization as Solution</div>
+        <h4>Physician's Note Closed the Gap</h4>
+        <p>The relevance gap identified in Finding 2 directly motivated the optional physician's note upload feature. After implementation, the system produced noticeably more relevant, specific, and actionable responses — achieved entirely within the RAG framework.</p>
+      </div>
+      <div class="finding-card">
+        <div class="finding-label">Finding 04 — Dual-Audience Value</div>
+        <h4>Caretakers Are Underserved by Clinical AI</h4>
+        <p>The system demonstrated particular value for non-professional caretakers — a population typically underserved by clinical AI tools most often designed for healthcare providers. This validated the dual-audience design as both feasible and impactful.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- LITERATURE -->
+<section class="lit-section" id="literature">
+  <div class="section">
+    <div class="section-label">06 — Literature Foundation</div>
+    <h2 class="section-title">Three core <em>challenges</em> informed design</h2>
+    <p class="section-intro">A review of clinical literature identified the clinical uncertainty inherent in TBI outcomes, the persistent research-to-practice lag, and the caretaker information gap — all of which shaped the RAG architecture selection.</p>
+    <div class="refs-list">
+      <div class="ref-item">
+        <div class="ref-dot"></div>
+        <p><strong>Lewis et al. (2020)</strong> — Foundational work on retrieval-augmented generation, establishing the RAG paradigm that grounds AI responses in verified source documents — a critical property for clinical contexts where misinformation carries real cost.</p>
+      </div>
+      <div class="ref-item">
+        <div class="ref-dot"></div>
+        <p><strong>CDC (2023)</strong> — Epidemiological data on traumatic brain injury, establishing the scale and prevalence of TBI and its rehabilitation burden across the United States.</p>
+      </div>
+      <div class="ref-item">
+        <div class="ref-dot"></div>
+        <p><strong>Corrigan et al. (2010)</strong> — TBI epidemiology establishing the population scope and caregiving context around which the dual-audience system design was structured.</p>
+      </div>
+      <div class="ref-item">
+        <div class="ref-dot"></div>
+        <p><strong>Maas et al. (2017)</strong> — Integrated approaches to TBI prevention and care, informing the interdisciplinary framing of the system and its response generation design.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FUTURE DIRECTIONS -->
+<section id="future">
+  <div class="section">
+    <div class="section-label">07 — Future Directions</div>
+    <h2 class="section-title">Where the work <em>goes next</em></h2>
+    <p class="section-intro">Based on evaluation findings and current system limitations, four directions have been identified for continued development.</p>
+    <div class="future-grid">
+      <div class="future-card">
+        <h4>Custom Model Training</h4>
+        <p>Replace DeepSeek with a domain-specific model trained exclusively on neurological and TBI literature to improve response accuracy, reduce third-party API dependence, and increase system autonomy — contingent on access to greater computational resources.</p>
+      </div>
+      <div class="future-card">
+        <h4>Expanded Literature Base</h4>
+        <p>Continuously ingest newly published peer-reviewed articles into ChromaDB to improve the system's breadth and currency of knowledge, ensuring responses remain aligned with the evolving state of neurological research.</p>
+      </div>
+      <div class="future-card">
+        <h4>Automated Scraping Pipeline</h4>
+        <p>Implement an automated article scraping system with rigorous quality filtering to ensure only credible, peer-reviewed sources are indexed, keeping the knowledge base current without manual curation overhead.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- REFLECTION -->
+<section class="reflection-section" id="reflection">
+  <div class="section">
+    <div class="section-label">08 — Personal Reflection</div>
+    <h2 class="section-title">What this work <em>meant</em></h2>
+    <blockquote class="pullquote">
+      "The most impactful AI applications are not the loudest or most visible, but those that quietly and meaningfully improve the daily lives of everyday people."
+    </blockquote>
+    <p class="reflection-body">Tanmay Sharma:</p>
+    <br>
+    <p class="reflection-body">My involvement in this project spanned the full development cycle — from obtaining CITI IRB certification for Social and Behavioral Human Subjects Research, to leading the team in system design and development, to coordinating with the patient's physiotherapist to ensure the system's outputs were medically grounded and practically useful.<br><br>
+    Working directly with Gabe, a Penn State alumnus living with speech impairment and limited motor function as a result of TBI, gave this project a human dimension that fundamentally changed how I think about AI development. This project also deepened technical skills I intend to carry forward into my honors thesis research on bias and fairness in large language models in the legal domain.</p>
+    <div class="skills-grid">
+      <div class="skill-chip">RAG System Design</div>
+      <div class="skill-chip">Vector DB Management</div>
+      <div class="skill-chip">LLM Integration</div>
+      <div class="skill-chip">CITI IRB Certification</div>
+      <div class="skill-chip">User-Centered Design</div>
+      <div class="skill-chip">Clinical AI Ethics</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">RAG for Speech-Language Pathology · The Given Voice Program · Penn State IST</div>
+  <div class="footer-right">Tanmay Sharma & Devaj Solanki · Spring 2026</div>
+</footer>
+
+</body>
+</html>
